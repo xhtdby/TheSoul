@@ -2,6 +2,7 @@
 #include "items.hpp"
 #include "instance.hpp"
 #include "functions.hpp"
+#include "game_engine.hpp"
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten/bind.h>
@@ -122,5 +123,41 @@ EMSCRIPTEN_BINDINGS(Immolate) {
         .constructor<>()
         .constructor<double>()
         .function("random", &LuaRandom::random);
+    
+    //game_engine.hpp
+    class_<GameGoal>("GameGoal")
+        .constructor<>()
+        .constructor<std::string, double, int, bool>()
+        .property("type", &GameGoal::type)
+        .property("targetValue", &GameGoal::targetValue)
+        .property("byAnteRound", &GameGoal::byAnteRound)
+        .property("isMandatory", &GameGoal::isMandatory);
+    class_<GameState>("GameState")
+        .constructor<>()
+        .property("currentAnte", &GameState::currentAnte)
+        .property("currentRound", &GameState::currentRound)
+        .property("score", &GameState::score)
+        .property("money", &GameState::money)
+        .property("handSize", &GameState::handSize)
+        .property("discards", &GameState::discards)
+        .property("hands", &GameState::hands)
+        .property("deck", &GameState::deck)
+        .property("stake", &GameState::stake);
+    class_<GameEngine>("GameEngine")
+        .constructor<>()
+        .constructor<std::string>()
+        .function("initialize", &GameEngine::initialize)
+        .function("setState", &GameEngine::setState)
+        .function("addGoal", select_overload<void(GameGoal)>(&GameEngine::addGoal))
+        .function("clearGoals", &GameEngine::clearGoals)
+        .function("predictNextShopItems", &GameEngine::predictNextShopItems)
+        .function("predictBoss", &GameEngine::predictBoss)
+        .function("predictVoucher", &GameEngine::predictVoucher)
+        .function("checkGoalFeasibility", &GameEngine::checkGoalFeasibility)
+        .function("getFeedback", &GameEngine::getFeedback)
+        .function("simulateToAnte", &GameEngine::simulateToAnte)
+        .function("getRecommendedActions", &GameEngine::getRecommendedActions)
+        .function("query", &GameEngine::query)
+        .property("state", &GameEngine::state);
 }
 #endif

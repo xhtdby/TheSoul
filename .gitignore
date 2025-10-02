@@ -1,0 +1,42 @@
+# Build artifacts
+*.o
+*.obj
+*.wasm.map
+*.js.map
+
+# Temporary files
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/settings.json
+.idea/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+ENV/
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Build directories
+build/
+dist/
+out/
+
+# OS files
+.DS_Store
+.AppleDouble
+.LSOverride

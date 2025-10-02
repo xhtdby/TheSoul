@@ -1,0 +1,312 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Balatro Game Engine - Example</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: #00ff00;
+        }
+        h1, h2 {
+            color: #00ff00;
+            border-bottom: 2px solid #00ff00;
+            padding-bottom: 10px;
+        }
+        .section {
+            background-color: #2a2a2a;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+            border: 1px solid #00ff00;
+        }
+        input, select, button {
+            background-color: #3a3a3a;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 8px 12px;
+            margin: 5px;
+            font-family: 'Courier New', monospace;
+        }
+        button {
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background-color: #00ff00;
+            color: #1a1a1a;
+        }
+        textarea, pre {
+            background-color: #0a0a0a;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 10px;
+            width: 100%;
+            box-sizing: border-box;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+        }
+        .goal-item {
+            background-color: #3a3a3a;
+            padding: 10px;
+            margin: 5px 0;
+            border-left: 3px solid #00ff00;
+        }
+        label {
+            display: inline-block;
+            min-width: 150px;
+            color: #ffff00;
+        }
+    </style>
+</head>
+<body>
+    <h1>🃏 Balatro Game Engine</h1>
+    <p>This tool helps you plan your Balatro runs by analyzing seed outcomes and checking if your goals are achievable.</p>
+
+    <script>
+        var Immolate = {
+            onRuntimeInitialized: function() {
+                console.log("Game Engine loaded!");
+                document.getElementById("status").textContent = "✓ Engine Ready";
+            }
+        };
+    </script>
+    <script src="immolate.js"></script>
+
+    <div class="section">
+        <h2>1. Initialize Game Engine</h2>
+        <label>Seed:</label>
+        <input type="text" id="seed" placeholder="Enter seed (e.g., ABCD1234)" maxlength="8">
+        <label>Deck:</label>
+        <select id="deck">
+            <option value="Red Deck">Red Deck</option>
+            <option value="Blue Deck">Blue Deck</option>
+            <option value="Yellow Deck">Yellow Deck</option>
+            <option value="Green Deck">Green Deck</option>
+            <option value="Black Deck">Black Deck</option>
+            <option value="Magic Deck">Magic Deck</option>
+            <option value="Nebula Deck">Nebula Deck</option>
+            <option value="Ghost Deck">Ghost Deck</option>
+        </select>
+        <label>Stake:</label>
+        <select id="stake">
+            <option value="White Stake">White Stake</option>
+            <option value="Red Stake">Red Stake</option>
+            <option value="Green Stake">Green Stake</option>
+            <option value="Black Stake">Black Stake</option>
+        </select>
+        <br>
+        <button onclick="initializeEngine()">Initialize Engine</button>
+        <span id="status">⏳ Not initialized</span>
+    </div>
+
+    <div class="section">
+        <h2>2. Set Game Goals</h2>
+        <div>
+            <label>Goal Type:</label>
+            <select id="goalType">
+                <option value="min_money">Minimum Money</option>
+                <option value="min_score">Minimum Score</option>
+                <option value="max_money">Maximum Money (constraint)</option>
+                <option value="max_score">Maximum Score (constraint)</option>
+            </select>
+            <label>Target Value:</label>
+            <input type="number" id="goalValue" placeholder="e.g., 100 for money">
+            <label>By Ante:</label>
+            <input type="number" id="goalAnte" value="3" min="1" max="8">
+            <label>Mandatory:</label>
+            <input type="checkbox" id="goalMandatory">
+            <button onclick="addGoal()">Add Goal</button>
+        </div>
+        <div id="goalsList"></div>
+        <button onclick="clearGoals()">Clear All Goals</button>
+    </div>
+
+    <div class="section">
+        <h2>3. Check Feasibility</h2>
+        <button onclick="checkFeasibility()">Check If Goals Are Achievable</button>
+        <pre id="feasibilityOutput"></pre>
+    </div>
+
+    <div class="section">
+        <h2>4. Simulate Game</h2>
+        <label>Simulate to Ante:</label>
+        <input type="number" id="simAnte" value="3" min="1" max="8">
+        <button onclick="simulateGame()">Run Simulation</button>
+        <pre id="simulationOutput"></pre>
+    </div>
+
+    <div class="section">
+        <h2>5. Query Specific Information</h2>
+        <label>Query Type:</label>
+        <select id="queryType">
+            <option value="boss">Boss Blind</option>
+            <option value="voucher">Voucher</option>
+            <option value="tag">Tag</option>
+            <option value="pack">Pack</option>
+        </select>
+        <label>For Ante:</label>
+        <input type="number" id="queryAnte" value="1" min="1" max="8">
+        <button onclick="queryInfo()">Query</button>
+        <pre id="queryOutput"></pre>
+    </div>
+
+    <div class="section">
+        <h2>6. Get Recommendations</h2>
+        <label>Current Ante:</label>
+        <input type="number" id="recAnte" value="1" min="1" max="8">
+        <button onclick="getRecommendations()">Get Recommendations</button>
+        <pre id="recommendationsOutput"></pre>
+    </div>
+
+    <script>
+        let gameEngine = null;
+        let currentGoals = [];
+
+        function initializeEngine() {
+            const seed = document.getElementById('seed').value.toUpperCase().replace(/0/g, 'O');
+            const deck = document.getElementById('deck').value;
+            const stake = document.getElementById('stake').value;
+
+            if (!seed) {
+                alert("Please enter a seed!");
+                return;
+            }
+
+            try {
+                // Create new engine
+                gameEngine = new Module.GameEngine(seed);
+                
+                // Set up initial state
+                let state = new Module.GameState();
+                state.deck = deck;
+                state.stake = stake;
+                gameEngine.setState(state);
+
+                document.getElementById('status').textContent = "✓ Engine Initialized with seed: " + seed;
+                console.log("Engine initialized successfully");
+            } catch (e) {
+                document.getElementById('status').textContent = "✗ Error: " + e.message;
+                console.error(e);
+            }
+        }
+
+        function addGoal() {
+            if (!gameEngine) {
+                alert("Please initialize the engine first!");
+                return;
+            }
+
+            const type = document.getElementById('goalType').value;
+            const value = parseFloat(document.getElementById('goalValue').value);
+            const ante = parseInt(document.getElementById('goalAnte').value);
+            const mandatory = document.getElementById('goalMandatory').checked;
+
+            if (isNaN(value) || isNaN(ante)) {
+                alert("Please enter valid numbers!");
+                return;
+            }
+
+            const goal = new Module.GameGoal(type, value, ante, mandatory);
+            gameEngine.addGoal(goal);
+            currentGoals.push({type, value, ante, mandatory});
+
+            updateGoalsList();
+            console.log("Goal added:", type, value, ante, mandatory);
+        }
+
+        function updateGoalsList() {
+            const list = document.getElementById('goalsList');
+            list.innerHTML = '<h3>Current Goals:</h3>';
+            currentGoals.forEach((goal, index) => {
+                const div = document.createElement('div');
+                div.className = 'goal-item';
+                div.innerHTML = `
+                    <strong>${index + 1}.</strong> 
+                    ${goal.type}: ${goal.value} by Ante ${goal.ante}
+                    ${goal.mandatory ? ' (MANDATORY)' : ''}
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function clearGoals() {
+            if (gameEngine) {
+                gameEngine.clearGoals();
+            }
+            currentGoals = [];
+            updateGoalsList();
+            document.getElementById('goalsList').innerHTML = '';
+        }
+
+        function checkFeasibility() {
+            if (!gameEngine) {
+                alert("Please initialize the engine first!");
+                return;
+            }
+
+            const feasible = gameEngine.checkGoalFeasibility();
+            const feedback = gameEngine.getFeedback();
+            
+            document.getElementById('feasibilityOutput').textContent = 
+                "=== FEASIBILITY CHECK ===\n" +
+                "Overall: " + (feasible ? "✓ ALL GOALS ACHIEVABLE" : "✗ SOME GOALS MAY BE UNREACHABLE") + "\n\n" +
+                feedback;
+        }
+
+        function simulateGame() {
+            if (!gameEngine) {
+                alert("Please initialize the engine first!");
+                return;
+            }
+
+            const targetAnte = parseInt(document.getElementById('simAnte').value);
+            const report = gameEngine.simulateToAnte(targetAnte);
+            document.getElementById('simulationOutput').textContent = report;
+        }
+
+        function queryInfo() {
+            if (!gameEngine) {
+                alert("Please initialize the engine first!");
+                return;
+            }
+
+            const queryType = document.getElementById('queryType').value;
+            const ante = parseInt(document.getElementById('queryAnte').value);
+            const result = gameEngine.query(queryType, ante);
+            
+            document.getElementById('queryOutput').textContent = 
+                "Query: " + queryType + " for Ante " + ante + "\n" +
+                "Result: " + result;
+        }
+
+        function getRecommendations() {
+            if (!gameEngine) {
+                alert("Please initialize the engine first!");
+                return;
+            }
+
+            const ante = parseInt(document.getElementById('recAnte').value);
+            const recommendations = gameEngine.getRecommendedActions(ante);
+            
+            let output = "=== RECOMMENDED ACTIONS (Ante " + ante + ") ===\n\n";
+            for (let i = 0; i < recommendations.size(); i++) {
+                output += "• " + recommendations.get(i) + "\n";
+            }
+            
+            document.getElementById('recommendationsOutput').textContent = output;
+        }
+
+        // Example usage on load
+        window.addEventListener('DOMContentLoaded', () => {
+            // Pre-fill with example
+            document.getElementById('seed').value = 'TEST123';
+        });
+    </script>
+</body>
+</html>
